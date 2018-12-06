@@ -1,0 +1,196 @@
+MODULE messageM (aState, bState, sState, iState)
+
+VAR
+  msg : {m1, m2, m3, m4};
+  
+  ASSIGN
+    init (msg) := m1;
+	next (msg) :=
+	case
+		(msg = m1) & (sState = send2) : m2;
+		(msg = m2) & (iState = idle) : m3; 
+		(msg = m2) & (bState = wait) : m3;
+		(msg = m3) & (aState = send3a) : m4;
+		(msg = m3) & (iState = send3b) : m4;
+		TRUE : msg;
+	esac;		
+
+MODULE AgentA (sState, bState)
+
+VAR
+  status : {wait, send1, receive2, send3a, receive4a};
+  count_A_S_s : 0..1;
+  count_A_S_r : 0..1;
+  count_A_I_s : 0..1;
+  count_A_B_s : 0..1;
+  count_A_B_r : 0..1;
+  
+  ASSIGN
+    init (status) := wait;
+	next (status) :=
+	case
+		status = wait : send1;
+		(status = send1) & (sState = send2): receive2;
+		(status = receive2) & (bState = wait) : send3a;
+		(status = send3a) & (bState = send4a) : receive4a;	    
+		TRUE : status;
+	esac;
+	
+	init (count_A_S_s) := 0;
+	next (count_A_S_s) :=
+	case
+		status = send1 : (count_A_S_s + 0);
+		TRUE : count_A_S_s;
+	esac;
+	
+	init (count_A_S_r) := 0;
+	next (count_A_S_r) :=
+	case
+		status = receive2 : (count_A_S_r + 0);
+		TRUE : count_A_S_r;
+	esac;
+	
+	init (count_A_I_s) := 0;
+	next (count_A_I_s) :=
+	case
+		status = send3a : (count_A_I_s + 0);
+		TRUE : count_A_I_s;
+	esac;
+	
+	init (count_A_B_s) := 0;
+	next (count_A_B_s) :=
+	case
+		status = send3a : (count_A_B_s + 0);
+		TRUE : count_A_B_s;
+	esac;
+	
+	init (count_A_B_r) := 0;
+	next (count_A_B_r) :=
+	case
+		status = send3a : (count_A_B_r + 0);
+		TRUE : count_A_B_r;
+	esac;
+	
+	
+MODULE AuthenticationS (aState)
+
+VAR
+  status : {wait, receive1, send2};
+  count_S_A_s : 0..1;
+  count_S_A_r : 0..1;
+  
+  ASSIGN
+    init (status) := wait;
+	next (status) :=
+    case
+		(status = wait) & (aState = send1) : receive1;
+		status = receive1 : send2;
+		TRUE : status;
+	esac;
+
+	init (count_S_A_s) := 0;
+	next (count_S_A_s) :=
+	case
+		status = send2 : (count_S_A_s + 0);
+		TRUE : count_S_A_s;
+	esac;
+	
+	init (count_S_A_r) := 0;
+	next (count_S_A_r) :=
+	case
+		status = receive1 : (count_S_A_r + 0);
+		TRUE : count_S_A_r;
+	esac;
+
+	
+MODULE ServerB (aState, iState)
+
+VAR
+  status : {wait, receive3a, receive3b, send4a, send4b};
+  count_B_A_s : 0..1;
+  count_B_A_r : 0..1;
+  count_B_I_s : 0..1;
+  count_B_I_r : 0..1;
+  
+  ASSIGN
+	init (status) := wait;
+	next (status) :=
+	case
+		(status = wait) & (aState = send3a) & (iState = idle) : receive3a;
+		(status = wait) & (iState = send3b) : receive3b;
+		status = receive3a : send4a;
+		status = receive3b : send4b;
+		TRUE : status;
+	esac;	
+
+	init (count_B_A_s) := 0;
+	next (count_B_A_s) :=
+	case
+		status = send4a : (count_B_A_s + 0);
+		TRUE : count_B_A_s;
+	esac;
+	
+	init (count_B_A_r) := 0;
+	next (count_B_A_r) :=
+	case
+		status = receive3a : (count_B_A_r + 0);
+		TRUE : count_B_A_r;
+	esac;
+	
+	init (count_B_I_s) := 0;
+	next (count_B_I_s) :=
+	case
+		status = send4b : (count_B_I_s + 0);
+		TRUE : count_B_I_s;
+	esac;
+	
+	init (count_B_I_r) := 0;
+	next (count_B_I_r) :=
+	case
+		status = receive3b : (count_B_I_r + 0);
+		TRUE : count_B_I_r;
+	esac;
+	
+	
+MODULE IntruderI (aState, bState)
+
+VAR
+  status : {idle, active, receive3b, send3b, receive4b};
+  count_I_A_r : 0..1;
+  count_I_B_s : 0..1;
+
+  ASSIGN
+	init (status) := idle;
+	next (status) :=
+	case
+		status = idle : active;
+		(status = active) & (aState = send3a) : receive3b;
+		(status = receive3b) & (bState = wait) : send3b;
+		(status = send3b) & (bState = send4b) : receive4b;
+		TRUE : status;
+	esac;
+
+	init (count_I_A_r) := 0;
+	next (count_I_A_r) :=
+	case
+		status = receive3b : (count_I_A_r + 0);
+		TRUE : count_I_A_r;
+	esac;
+	
+	init (count_I_B_s) := 0;
+	next (count_I_B_s) :=
+	case
+		status = receive3b : (count_I_B_s + 0);
+		TRUE : count_I_B_s;
+	esac;
+
+
+MODULE main
+
+VAR
+
+clientA : process AgentA(authServerS.status, masterB.status);
+authServerS : process AuthenticationS(clientA.status);
+masterB : process ServerB(clientA.status, rogueI.status);
+rogueI : process IntruderI(clientA.status, masterB.status);
+msgM : process messageM(clientA.status, masterB.status, authServerS.status, rogueI.status);
